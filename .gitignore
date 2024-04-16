@@ -6,6 +6,10 @@ __pycache__/
 # C extensions
 *.so
 
+# Ignore files in data directory except for the .gitkeep file
+data/*
+!data/.gitkeep
+
 # Distribution / packaging
 .Python
 build/

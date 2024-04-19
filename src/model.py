@@ -1,8 +1,5 @@
 import torch
 from torch import nn
-from torch.nn import functional as F
-
-from model_components import Patch
 
 class VisionTransformer(nn.Module):
     def __init__(self, image_width: int, image_height: int, patch_size: int, latent_space_dim: int, num_classes: int):

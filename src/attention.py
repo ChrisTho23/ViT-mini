@@ -17,17 +17,15 @@ class self_attention_layer(torch.nn.Module):
         :params queries: [B, N, D]
         """
         return self.softmax_layer(torch.einsum('bid, bjd->bij', queries, keys))
-
-
     def forward(self, x):
         """
         Implements forward pass of self-attention layer
         params:
         x: [B, N, D] (B: batch size, N: context-length, D: latent space dim.)
         """
-        B, C, D = x.shape
+        B, N, D = x.shape
 
-        x = torch.nn.LayerNorm([C,D])(x)
+        x = torch.nn.LayerNorm([N,D])(x)
         keys = self.keys_layer(x)
         queries = self.queries_layer(x)
         values = self.values_layer(x)
@@ -36,7 +34,6 @@ class self_attention_layer(torch.nn.Module):
         att_scores = self.get_att_scores(keys, queries)
 
         return torch.einsum('bjd, bij->bid', values, att_scores) # shape: [B, N, D]
-
 
 class multi_head_self_attention_layer(torch.nn.Module):
     def __init__(self, dim_in, dim_out, num_heads, context_length):

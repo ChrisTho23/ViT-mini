@@ -32,6 +32,7 @@ class SelfAttentionLayer(torch.nn.Module):
         att_scores = self.get_att_scores(keys, queries) # shape: [B, N, N]
 
         return torch.einsum('bjd, bij->bid', values, att_scores) # shape: [B, N, D]
+        
 class MultiHeadSelfAttentionLayer(torch.nn.Module):
     def __init__(self, dim_in: int, dim_out: int, num_heads: int, context_length: int, dtype=float):
         super(MultiHeadSelfAttentionLayer, self).__init__()

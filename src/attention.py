@@ -1,9 +1,9 @@
 import torch
 import numpy as np
 
-class self_attention_layer(torch.nn.Module):
+class SelfAttentionLayer(torch.nn.Module):
     def __init__(self,dim_in: int, dim_out: int, dtype=float):
-        super(self_attention_layer, self).__init__()
+        super(SelfAttentionLayer, self).__init__()
         self.dim_in = dim_in
         self.dim_out = dim_out
         self.dtype = dtype
@@ -32,9 +32,9 @@ class self_attention_layer(torch.nn.Module):
         att_scores = self.get_att_scores(keys, queries) # shape: [B, N, N]
 
         return torch.einsum('bjd, bij->bid', values, att_scores) # shape: [B, N, D]
-class multi_head_self_attention_layer(torch.nn.Module):
+class MultiHeadSelfAttentionLayer(torch.nn.Module):
     def __init__(self, dim_in: int, dim_out: int, num_heads: int, context_length: int, dtype=float):
-        super(multi_head_self_attention_layer, self).__init__()
+        super(MultiHeadSelfAttentionLayer, self).__init__()
         self.dim_in = dim_in
         self.dim_out = dim_out
         self.num_heads = num_heads
@@ -42,7 +42,7 @@ class multi_head_self_attention_layer(torch.nn.Module):
         self.context_length = context_length
         self.dtype = dtype
         self.output_projection = torch.nn.Linear(dim_out, dim_out, dtype=self.dtype)
-        self.attention_heads = [self_attention_layer(dim_in, self.d_head, dtype=self.dtype) for i in range(self.num_heads)]
+        self.attention_heads = [SelfAttentionLayer(dim_in, self.d_head, dtype=self.dtype) for i in range(self.num_heads)]
     def forward(self, x):
         x = torch.concat([self_att(x) for self_att in self.attention_heads], axis=-1) # concatenate along data dim
         return self.output_projection(x)
@@ -50,7 +50,7 @@ class multi_head_self_attention_layer(torch.nn.Module):
 
 if(__name__ == "__main__"):
     test_input = torch.tensor(np.random.rand(1,10,8)) # B=1, N=10, D=8
-    att_heads = multi_head_self_attention_layer(dim_in=8, dim_out=8, num_heads=2, context_length=10) # D_in = 5, D_out = 5, num_heads = 2
+    att_heads = MultiHeadSelfAttentionLayer(dim_in=8, dim_out=8, num_heads=2, context_length=10) # D_in = 5, D_out = 5, num_heads = 2
     test_output = att_heads(test_input)
 
     print("Test output: ", test_output)

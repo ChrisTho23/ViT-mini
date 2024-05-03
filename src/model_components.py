@@ -2,7 +2,7 @@ import torch
 from torch import nn
 import numpy as np
 
-from attention import multi_head_self_attention_layer
+from attention import MultiHeadSelfAttentionLayer
 
 
 class Patch(nn.Module):
@@ -34,7 +34,7 @@ class transformer_block(nn.Module):
         self.dtype=dtype
         self.layer_norm_1 = nn.LayerNorm(emb_dim, dtype=self.dtype) # only normalize over embedding dim.
         self.layer_norm_2 = nn.LayerNorm(emb_dim, dtype=self.dtype)
-        self.multi_head_att = multi_head_self_attention_layer(dim_in=emb_dim, dim_out=emb_dim, num_heads=num_heads, context_length=context_length, dtype=self.dtype)
+        self.multi_head_att = MultiHeadSelfAttentionLayer(dim_in=emb_dim, dim_out=emb_dim, num_heads=num_heads, context_length=context_length, dtype=self.dtype)
         self.feed_forward = feed_forward(dim_in=emb_dim, dim_ff=dim_ff, dim_out =emb_dim, dtype=self.dtype)
     def forward(self, x):
         x_prime = x + self.multi_head_att(self.layer_norm_1(x))

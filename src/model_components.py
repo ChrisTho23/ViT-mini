@@ -2,10 +2,9 @@ import torch
 from torch import nn
 import numpy as np
 
-from attention import MultiHeadSelfAttentionLayer
+from src.attention import MultiHeadSelfAttentionLayer
 
-
-class Patch(nn.Module):
+class Patch(nn.Module): # do we need this?
     def __init__(self, patch_size: int, latent_space_dim: int):
         super(Patch, self).__init__()
         self.patch_size = patch_size
@@ -22,20 +21,22 @@ class FeedForward(nn.Module):
         super(FeedForward, self).__init__()
         self.dtype=dtype
         self.ff_1 = nn.Linear(dim_in, dim_ff, bias=True, dtype=self.dtype)
-        self.ff_2 = nn.Linear(dim_ff, dim_out, bias=True, dtype=self.dtype)
         self.activation = nn.GELU()
+        self.ff_2 = nn.Linear(dim_ff, dim_out, bias=True, dtype=self.dtype)
     def forward(self, x):
         return self.ff_2(self.activation(self.ff_1(x)))
     
 
 class TransformerBlock(nn.Module):
-    def __init__(self,emb_dim: int , dim_ff: int, num_heads: int, context_length: int, dtype=float):
+    def __init__(self, emb_dim: int, dim_ff: int, num_heads: int, context_length: int, dtype=float):
         super(TransformerBlock, self).__init__()
         self.dtype=dtype
         self.layer_norm_1 = nn.LayerNorm(emb_dim, dtype=self.dtype) # only normalize over embedding dim.
         self.layer_norm_2 = nn.LayerNorm(emb_dim, dtype=self.dtype)
-        self.multi_head_att = MultiHeadSelfAttentionLayer(dim_in=emb_dim, dim_out=emb_dim, num_heads=num_heads, context_length=context_length, dtype=self.dtype)
-        self.feed_forward = FeedForward(dim_in=emb_dim, dim_ff=dim_ff, dim_out =emb_dim, dtype=self.dtype)
+        self.multi_head_att = MultiHeadSelfAttentionLayer(
+            dim_in=emb_dim, dim_out=emb_dim, num_heads=num_heads, context_length=context_length, dtype=self.dtype
+        )
+        self.feed_forward = FeedForward(dim_in=emb_dim, dim_ff=dim_ff, dim_out=emb_dim, dtype=self.dtype)
     def forward(self, x):
         x_prime = x + self.multi_head_att(self.layer_norm_1(x))
         return x_prime+self.feed_forward(self.layer_norm_2(x_prime))

@@ -1,10 +1,14 @@
 import torch
 from torch import nn
+import torch.nn.functional as F
+
+from src.model_components import FeedForward, TransformerBlock
 
 class VisionTransformer(nn.Module):
     def __init__(
         self, image_width: int, image_height: int, channel_size: int,
-        patch_size: int, latent_space_dim: int
+        patch_size: int, latent_space_dim: int, dim_ff: int,  num_heads: int,
+        depth: int, num_classes: int = None
     ):
         super(VisionTransformer, self).__init__()
         self.patch_size = patch_size
@@ -18,21 +22,38 @@ class VisionTransformer(nn.Module):
             self.num_patches,
             self.latent_space_dim
         )
+        self.transformer_blocks = nn.Sequential(
+            *[TransformerBlock(latent_space_dim, dim_ff, num_heads, self.num_patches) for _ in range(depth)]
+        )
+        self.classification_head = FeedForward(self.num_patches * latent_space_dim, dim_ff, num_classes)
 
-    def forward(self, x):
+    def forward(self, x, targets=None):
         B, C, H, W = x.shape
 
-        patches = x.unfold(
+        # extract patches
+        x = x.unfold(
             2, self.patch_size, self.patch_size
         ).unfold(3, self.patch_size, self.patch_size) # B, C, H//patch_size, W//patch_size, patch_size, patch_size
-        patches = patches.contiguous().view(
+        x = x.contiguous().view(
             B, self.num_patches, C * self.patch_size * self.patch_size
         ) # B, num_patches, C * patch_size * patch_size
 
-        patch_embedding = self.patch_embedding_layer(patches) # B, num_patches, latent_space_dim
-        positional_embedding = self.positional_embedding_table(
-            torch.arange(self.num_patches, device=patches.device)
+        # create embeddings
+        x_patch_embedding = self.patch_embedding_layer(x) # B, num_patches, latent_space_dim
+        x_pos_embedding = self.positional_embedding_table(
+            torch.arange(self.num_patches, device=x.device)
         ) # B, num_patches, latent_space_dim
-        embedding = patch_embedding + positional_embedding # B, num_patches, latent_space_dim
+        x_embedding = x_patch_embedding + x_pos_embedding # B, num_patches, latent_space_dim
 
-        return embedding
+        # transformer blocks
+        x = self.transformer_blocks(x_embedding).view(B, -1) # B, num_patches * latent_space_dim
+
+        # classification head
+        logits = self.classification_head(x) # B, num_classes
+
+        if targets is None:
+            loss = None
+        else:
+            loss = F.cross_entropy(logits, targets)
+
+        return logits, loss

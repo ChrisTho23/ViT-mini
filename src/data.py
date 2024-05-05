@@ -4,8 +4,8 @@ from torchvision import datasets, transforms
 import argparse
 import logging
 
-from src.config import TRAINING, DATA_DIR 
-from src.utils import display_image
+from config import TRAINING, DATA_DIR 
+from utils import display_image
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 

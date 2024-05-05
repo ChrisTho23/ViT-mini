@@ -1,5 +1,6 @@
 import logging
 import argparse
+import torch
 
 from src.model import VisionTransformer
 from src.data import load_cifar10 
@@ -11,9 +12,49 @@ def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--download", help="Flag to download the CIFAR-10 dataset", type=bool, default=False)
+    parser.add_argument(
+        "--num_epochs", type=int, default=100 # check default value
+    )
+    parser.add_argument(
+        "--lr", help="Set initial learning rate", type=float, default=0.001 # check default value
+    )
+
     args = parser.parse_args()
 
     return args
+def train_model(
+        model: torch.nn.Module,
+        train_data: torch.utils.data.Dataloader,
+        val_data: torch.utils.data.Dataloader | None = None,
+        optimizer: torch.optim.Optimizer | None = torch.optim.Adam(),
+        num_epochs: int = 100
+):
+    phases = ["train", "val"] if val_data is not None else ["train"]
+    for epoch in num_epochs:
+        running_loss = 0. # set running loss for current epoch to zero
+        for phase in phases: 
+            if(phase == "train"):
+                model.train(True) # set into training mode
+            else:
+                model.eval() # set into eval mode
+            for i, data in enumerate(train_data): 
+                x, y = data
+                optimizer.zero_grad()
+
+                _, loss = model(x, y)
+
+                loss.backwar()
+
+                # perform optimizer step
+                optimizer.step()
+
+                running_loss += loss.item()
+
+            running_loss /= i # report mean loss for epoch
+            logging.info(f"Epoch {epoch} {phase}-loss: {running_loss}")
+
+    return model
+
 
 if __name__ == "__main__":
     # initialize arguments

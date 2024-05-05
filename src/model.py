@@ -25,7 +25,9 @@ class VisionTransformer(nn.Module):
         self.transformer_blocks = nn.Sequential(
             *[TransformerBlock(latent_space_dim, dim_ff, num_heads, self.num_patches) for _ in range(depth)]
         )
-        self.classification_head = FeedForward(self.num_patches * latent_space_dim, dim_ff, num_classes)
+
+        # TODO: MLP-head has (potentially different architecture than feed forward network used in transformer block)
+        self.classification_head = FeedForward(latent_space_dim, dim_ff, num_classes) # only one token used
 
     def forward(self, x, targets=None):
         B, C, H, W = x.shape
@@ -38,6 +40,10 @@ class VisionTransformer(nn.Module):
             B, self.num_patches, C * self.patch_size * self.patch_size
         ) # B, num_patches, C * patch_size * patch_size
 
+        # class token
+        x_class = torch.zeros(B, self.latent_space_dim)
+        x = torch.cat((x_class, x), dim=-1) # concatenate along sequence dim. 
+
         # create embeddings
         x_patch_embedding = self.patch_embedding_layer(x) # B, num_patches, latent_space_dim
         x_pos_embedding = self.positional_embedding_table(
@@ -49,7 +55,8 @@ class VisionTransformer(nn.Module):
         x = self.transformer_blocks(x_embedding).view(B, -1) # B, num_patches * latent_space_dim
 
         # classification head
-        logits = self.classification_head(x) # B, num_classes
+        # logits = self.classification_head(x) # B, num_classes
+        logits = self.classification_head(x[:, :, 0]) # only feed transformed class token into classification head
 
         if targets is None:
             loss = None

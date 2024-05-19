@@ -25,8 +25,8 @@ def classification_head():
     """Fixture to initialize the ClassificationHead."""
     dim_in = 64
     dim_ff = 128
-    dim_out = 10
-    return ClassificationHead(dim_in=dim_in, dim_ff=dim_ff, dim_out=dim_out, dtype=torch.float)
+    num_classes = 10
+    return ClassificationHead(dim_in=dim_in, dim_ff=dim_ff, num_classes=num_classes, dtype=torch.float)
 
 @pytest.fixture
 def transformer_block():

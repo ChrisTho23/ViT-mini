@@ -1,6 +1,7 @@
 import pytest
 import torch
 from torch.utils.data import DataLoader, TensorDataset
+from unittest.mock import patch, MagicMock
 
 from src.model import VisionTransformer
 from src.train import train_model
@@ -19,7 +20,9 @@ def synthetic_data():
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
     return dataloader, num_channels, image_size, num_classes
 
-def test_train_model(synthetic_data):
+@patch('wandb.log')
+@patch('wandb.init', MagicMock())
+def test_train_model(mock_wandb_log, synthetic_data):
     """Test the train_model function with synthetic data."""
     dataloader, num_channels, image_size, num_classes = synthetic_data
     emb_dim = 16

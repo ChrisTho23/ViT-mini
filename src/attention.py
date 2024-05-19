@@ -1,5 +1,4 @@
 import torch
-import numpy as np
 
 class SelfAttentionLayer(torch.nn.Module):
     def __init__(self,dim_in: int, dim_out: int, dtype=float):

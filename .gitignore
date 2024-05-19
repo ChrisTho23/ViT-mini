@@ -6,6 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
+# Ignore wandb directory
+wandb/
+
 # Ignore files in data directory except for the .gitkeep file
 data/*
 !data/.gitkeep

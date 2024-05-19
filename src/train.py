@@ -1,6 +1,7 @@
 import logging
 import argparse
 import torch
+import wandb
 
 from src.model import VisionTransformer
 from src.data import load_cifar10 
@@ -11,9 +12,13 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--download", help="Flag to download the CIFAR-10 dataset", type=bool, default=False)
+        "--download", help="Flag to download the CIFAR-10 dataset", action='store_true'
+    )
     parser.add_argument(
         "--num_epochs", type=int, default=TRAINING["num_epochs"]
+    )
+    parser.add_argument(
+        "--batch_size", type=int, default=TRAINING["batch_size"]
     )
     parser.add_argument(
         "--lr", help="Set initial learning rate", type=float, default=TRAINING["learning_rate"]
@@ -50,6 +55,7 @@ def train_model(
                 # perform optimizer step
                 optimizer.step()
 
+                wandb.log({f"{phase} loss": loss.item()})
                 running_loss += loss.item()
 
                 # report loss every 100th iteration
@@ -64,6 +70,18 @@ def train_model(
 if __name__ == "__main__":
     # initialize arguments
     args = get_args()
+
+    # initialize wandb
+    wandb.init(
+        project="ViT-mini",
+
+        config={
+            "dataset": "CIFAR-10",
+            "patch_size": DATA["patch_size"],
+            **args.__dict__,
+            **MODEL
+        }
+    )
 
     # load CIFAR-10 dataset
     try:

@@ -2,7 +2,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-from src.model_components import FeedForward, ClassificationHead, TransformerBlock
+from src.model_components import ClassificationHead, TransformerBlock
 
 class VisionTransformer(nn.Module):
     def __init__(

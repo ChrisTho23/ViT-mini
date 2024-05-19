@@ -13,7 +13,7 @@ def get_args():
 
     return args
 
-def load_cifar10(target_directory, download, batch_size: int = 64) -> torch.utils.data.DataLoader:
+def load_cifar10(target_directory, download, batch_size: int) -> torch.utils.data.DataLoader:
     logging.info("Downloading CIFAR-10 dataset")
     # tranform data to tensor and normalize
     transform = transforms.Compose([
@@ -34,4 +34,3 @@ def load_cifar10(target_directory, download, batch_size: int = 64) -> torch.util
     logging.info(f"CIFAR-10 dataset has been downloaded and saved in {target_directory}")
 
     return train_loader, test_loader
-

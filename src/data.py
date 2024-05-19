@@ -1,11 +1,7 @@
 import torch
-import torchvision
 from torchvision import datasets, transforms
 import argparse
 import logging
-
-from config import TRAINING, DATA_DIR 
-from utils import display_image
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 

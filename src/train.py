@@ -2,9 +2,9 @@ import logging
 import argparse
 import torch
 
-from model import VisionTransformer
-from data import load_cifar10 
-from config import TRAINING, DATA, DATA_DIR, MODEL
+from src.model import VisionTransformer
+from src.data import load_cifar10 
+from src.config import TRAINING, DATA, DATA_DIR, MODEL
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 

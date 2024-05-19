@@ -2,7 +2,7 @@ import torch
 from torch import nn
 import numpy as np
 
-from attention import MultiHeadSelfAttentionLayer
+from src.attention import MultiHeadSelfAttentionLayer
 
 class Patch(nn.Module): # do we need this?
     def __init__(self, patch_size: int, latent_space_dim: int):

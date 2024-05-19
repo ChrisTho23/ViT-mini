@@ -2,7 +2,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-from model_components import FeedForward, TransformerBlock
+from src.model_components import ClassificationHead, TransformerBlock
 
 class VisionTransformer(nn.Module):
     def __init__(
@@ -25,9 +25,7 @@ class VisionTransformer(nn.Module):
         self.transformer_blocks = nn.Sequential(
             *[TransformerBlock(latent_space_dim, dim_ff, num_heads, self.num_patches) for _ in range(depth)]
         )
-
-        # TODO: MLP-head has (potentially different architecture than feed forward network used in transformer block)
-        self.classification_head = FeedForward(latent_space_dim, dim_ff, num_classes) # only one token used
+        self.classification_head = ClassificationHead(latent_space_dim, dim_ff, num_classes) # only one token used
 
     def forward(self, x, targets=None):
         B, C, H, W = x.shape
@@ -42,27 +40,19 @@ class VisionTransformer(nn.Module):
 
         # class token
         x_class = torch.zeros(B, 1, self.latent_space_dim, dtype=float)
-        # print("Shape x: ", x.shape)
-        # print("Shape x_class: ", x_class.shape)
-        # x = torch.cat((x_class, x), dim=-1) # concatenate along sequence dim. 
 
         # create embeddings
         x_patch_embedding = self.patch_embedding_layer(x) # B, num_patches, latent_space_dim
         x_pos_embedding = self.positional_embedding_table(
             torch.arange(self.num_patches+1, device=x.device)
         ) # B, num_patches, latent_space_dim
-        # print("Shape x_patch_embedding: ", x_patch_embedding.shape)
         x_patch_embedding = torch.cat((x_class, x_patch_embedding), dim=1) # concatenate along sequence dim. 
         x_embedding = x_patch_embedding + x_pos_embedding # B, num_patches, latent_space_dim
 
         # transformer blocks
         x = self.transformer_blocks(x_embedding)# .view(B, -1) # B, num_patches * latent_space_dim
 
-        # print("Shape transformer output: ", x.shape)
-
         # classification head
-        # logits = self.classification_head(x) # B, num_classes
-        # print("Shape transformed class token: ", (x[:, 0, :]).shape)
         logits = self.classification_head(x[:, 0, :]) # only feed transformed class token into classification head
         if targets is None:
             loss = None

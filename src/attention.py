@@ -1,5 +1,4 @@
 import torch
-import numpy as np
 
 class SelfAttentionLayer(torch.nn.Module):
     def __init__(self,dim_in: int, dim_out: int, dtype=float):
@@ -43,16 +42,8 @@ class MultiHeadSelfAttentionLayer(torch.nn.Module):
         self.context_length = context_length
         self.dtype = dtype
         self.output_projection = torch.nn.Linear(dim_out, dim_out, dtype=self.dtype)
-        self.attention_heads = [SelfAttentionLayer(dim_in, self.d_head, dtype=self.dtype) for i in range(self.num_heads)]
+        self.attention_heads = [SelfAttentionLayer(dim_in, self.d_head, dtype=self.dtype) for _ in range(self.num_heads)]
     def forward(self, x):
         x = torch.concat([self_att(x) for self_att in self.attention_heads], axis=-1) # concatenate along data dim
         return self.output_projection(x)
-    
-
-if(__name__ == "__main__"):
-    test_input = torch.tensor(np.random.rand(1,10,8)) # B=1, N=10, D=8
-    att_heads = MultiHeadSelfAttentionLayer(dim_in=8, dim_out=8, num_heads=2, context_length=10) # D_in = 5, D_out = 5, num_heads = 2
-    test_output = att_heads(test_input)
-
-    print("Test output: ", test_output)
 

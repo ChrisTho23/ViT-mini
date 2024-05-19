@@ -3,16 +3,17 @@ import logging
 
 from src.model import VisionTransformer
 from src.data import load_cifar10
-from src.config import TRAINING, DATA, MODEL, DATA_DIR
+from src.config import TRAINING, DATA, MODEL
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 
 @pytest.fixture(scope="class")
-def load_data(request):
+def load_data(request, tmpdir_factory):
     """Fixture to load CIFAR-10 data."""
     try:
-        train_loader, _ = load_cifar10(DATA_DIR, download=True, batch_size=TRAINING["batch_size"])
-        request.cls.train_loader = train_loader
+        temp_dir = tmpdir_factory.mktemp("data")
+        train_loader, _ = load_cifar10(str(temp_dir), download=True, batch_size=TRAINING["batch_size"])
+        return train_loader
     except Exception as e:
         pytest.fail(f"Failed to load CIFAR-10 dataset: {e}")
 
@@ -32,9 +33,9 @@ def model(request):
 class TestVisionTransformer:
     """Test class for Vision Transformer functionality."""
 
-    def test_embedding_shape(self):
+    def test_embedding_shape(self, load_data):
         """Test that embedding shape is as expected after a forward pass."""
-        data_iter = iter(self.train_loader)
+        data_iter = iter(load_data)
         images, _ = next(data_iter)
         logits, loss = self.model(images)
         logging.info(f"Output embedding shape: {logits.shape}, loss is {loss}")

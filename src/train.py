@@ -22,12 +22,13 @@ def get_args():
     args = parser.parse_args()
 
     return args
+
 def train_model(
         model: torch.nn.Module,
         train_data: torch.utils.data.DataLoader,
         optimizer: torch.optim.Optimizer,
+        num_epochs: int,
         val_data: torch.utils.data.DataLoader | None = None,
-        num_epochs: int = 100
 ):
     phases = ["train", "val"] if val_data is not None else ["train"]
     for epoch in range(num_epochs):
@@ -79,9 +80,9 @@ if __name__ == "__main__":
     )
 
     # initialize optimizer
-    optim = torch.optim.Adam(params=model.parameters(True))
+    optim = torch.optim.Adam(params=model.parameters(True), lr=args.lr)
     train_model(model=model, 
                 train_data=train_loader,
                 optimizer=optim,
-                num_epochs=1)
+                num_epochs=args.num_epochs)
     

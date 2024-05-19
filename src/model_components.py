@@ -40,16 +40,3 @@ class TransformerBlock(nn.Module):
     def forward(self, x):
         x_prime = x + self.multi_head_att(self.layer_norm_1(x))
         return x_prime+self.feed_forward(self.layer_norm_2(x_prime))
-
-
-if(__name__=="__main__"):
-    # test position-wise feed forward
-    test_input = torch.tensor(np.random.rand(1,10,8)) # B: 1, N: 10, D: 5
-    feedforw = FeedForward(dim_in=8, dim_ff=10, dim_out=8)
-    test_output = feedforw(test_input) 
-    print("Test output: ", test_output)
-
-    # test transformer block
-    transf = TransformerBlock(emb_dim=8, dim_ff=10, num_heads=2, context_length=10)
-    test_transf_output = transf(test_input)
-    print("Test transformer output: ", test_transf_output)

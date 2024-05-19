@@ -55,7 +55,7 @@ def train_model(
             # perform optimizer step
             optimizer.step()
 
-            wandb.log({f"train_loss": loss.item()})
+            wandb.log({"train_loss": loss.item()})
             running_loss += loss.item()
 
             # report loss every 100th iteration

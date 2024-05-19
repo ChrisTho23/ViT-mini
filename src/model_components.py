@@ -14,15 +14,15 @@ class FeedForward(nn.Module):
 
 
 class ClassificationHead(nn.Module):
-    def __init__(self, dim_in: int, dim_ff: int, dim_out: int , dtype=float):
+    def __init__(self, dim_in: int, dim_ff: int, num_classes: int , dtype=float):
         super(ClassificationHead, self).__init__()
         self.dtype=dtype
         self.ff_1 = nn.Linear(dim_in, dim_ff, bias=True, dtype=self.dtype)
         self.activation = nn.Tanh() # tanh activation
-        self.ff_2 = nn.Linear(dim_ff, dim_out, bias=True, dtype=self.dtype)
+        self.ff_2 = nn.Linear(dim_ff, num_classes, bias=True, dtype=self.dtype)
 
     def forward(self, x):
-        return self.ff_2(self.activation(self.ff_1(x)))
+        return self.ff_2(self.activation(self.ff_1(x))) # B, N, num_classes
     
 
 class TransformerBlock(nn.Module):

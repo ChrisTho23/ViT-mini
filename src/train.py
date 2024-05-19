@@ -13,10 +13,10 @@ def get_args():
     parser.add_argument(
         "--download", help="Flag to download the CIFAR-10 dataset", type=bool, default=False)
     parser.add_argument(
-        "--num_epochs", type=int, default=100 # check default value
+        "--num_epochs", type=int, default=TRAINING["num_epochs"]
     )
     parser.add_argument(
-        "--lr", help="Set initial learning rate", type=float, default=0.001 # check default value
+        "--lr", help="Set initial learning rate", type=float, default=TRAINING["learning_rate"]
     )
 
     args = parser.parse_args()

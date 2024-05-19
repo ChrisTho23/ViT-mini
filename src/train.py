@@ -36,7 +36,7 @@ def train_model(
         for phase in phases:
             logging.info(f"Epoch {epoch}, phase: {phase}")
             if(phase == "train"):
-                model.train(True) # set into training mode
+                model.train() # set into training mode
             else:
                 model.eval() # set into eval mode
             for i, data in enumerate(train_data): 
@@ -81,8 +81,10 @@ if __name__ == "__main__":
 
     # initialize optimizer
     optim = torch.optim.Adam(params=model.parameters(True), lr=args.lr)
-    train_model(model=model, 
-                train_data=train_loader,
-                optimizer=optim,
-                num_epochs=args.num_epochs)
+    train_model(
+        model=model, 
+        train_data=train_loader,
+        optimizer=optim,
+        num_epochs=args.num_epochs
+    )
     

@@ -1,19 +1,24 @@
 import logging
 import argparse
 import torch
+import wandb
 
 from src.model import VisionTransformer
 from src.data import load_cifar10 
-from src.config import TRAINING, DATA, DATA_DIR, MODEL
+from src.config import TRAINING, DATA, DATA_DIR, MODEL_DIR, MODEL
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--download", help="Flag to download the CIFAR-10 dataset", type=bool, default=False)
+        "--download", help="Flag to download the CIFAR-10 dataset", action='store_true'
+    )
     parser.add_argument(
         "--num_epochs", type=int, default=TRAINING["num_epochs"]
+    )
+    parser.add_argument(
+        "--batch_size", type=int, default=TRAINING["batch_size"]
     )
     parser.add_argument(
         "--lr", help="Set initial learning rate", type=float, default=TRAINING["learning_rate"]
@@ -30,40 +35,78 @@ def train_model(
         num_epochs: int,
         val_data: torch.utils.data.DataLoader | None = None,
 ):
-    phases = ["train", "val"] if val_data is not None else ["train"]
+    logging.info("Training model...")
+
+    model.train()
+
     for epoch in range(num_epochs):
+        logging.info(f"Epoch {epoch}")
+
         running_loss = 0. # set running loss for current epoch to zero
-        for phase in phases:
-            logging.info(f"Epoch {epoch}, phase: {phase}")
-            if(phase == "train"):
-                model.train() # set into training mode
-            else:
-                model.eval() # set into eval mode
-            for i, data in enumerate(train_data): 
-                x, y = data
-                optimizer.zero_grad()
 
-                _, loss = model(x, y)
+        for i, data in enumerate(train_data): 
+            x, y = data
+            optimizer.zero_grad()
 
-                loss.backward()
+            _, loss = model(x, y)
 
-                # perform optimizer step
-                optimizer.step()
+            loss.backward()
 
-                running_loss += loss.item()
+            # perform optimizer step
+            optimizer.step()
 
-                # report loss every 100th iteration
-                if(i % 100 == 0):
-                    running_loss /= 100
-                    logging.info(f"Epoch {epoch}, Iteration {i}, loss: {running_loss}")
-                    running_loss = 0.
+            wandb.log({"train_loss": loss.item()})
+            running_loss += loss.item()
+
+            # report loss every 100th iteration
+            if((i + 1) % 100 == 0):
+                running_loss /= 100
+                logging.info(f"Epoch {epoch}, batch {i + 1} - Train loss: {running_loss}")
+                running_loss = 0.
 
     return model
+
+@torch.no_grad()
+def evaluate_model(model: torch.nn.Module, test_data: torch.utils.data.DataLoader):
+    logging.info("Evaluating model...")
+
+    model.eval()
+
+    acc = 0.
+    test_loss = 0.
+
+    for i, (x_test, y_test) in enumerate(test_data):
+        logits, loss = model(x_test, y_test)
+
+        preds = torch.argmax(torch.softmax(logits, dim=-1), dim=-1)
+        accuracy = (preds == y_test).float().mean()
+
+        wandb.log({"batch_test_loss": loss.item(), "batch_test_accuracy": accuracy.item()})
+        logging.info(f"Batch {i + 1} test metrics - Loss: {loss.item()}, Accuracy: {accuracy.item()}")
+
+        acc = (acc * i + accuracy.item()) / (i + 1)
+        test_loss = (test_loss * i + loss.item()) / (i + 1)
+
+        wandb.log({"test_loss": test_loss, "test_accuracy": acc})
+
+    logging.info(f"Final test metrics - Loss: {test_loss}, Accuracy: {acc}")
 
 
 if __name__ == "__main__":
     # initialize arguments
     args = get_args()
+
+    # initialize wandb
+    wandb.init(
+        project="ViT-mini",
+
+        config={
+            "dataset": "CIFAR-10",
+            "patch_size": DATA["patch_size"],
+            **args.__dict__,
+            **MODEL
+        }
+    )
 
     # load CIFAR-10 dataset
     try:
@@ -81,10 +124,18 @@ if __name__ == "__main__":
 
     # initialize optimizer
     optim = torch.optim.Adam(params=model.parameters(True), lr=args.lr)
-    train_model(
+
+    # train model
+    model = train_model(
         model=model, 
         train_data=train_loader,
         optimizer=optim,
-        num_epochs=args.num_epochs
+        num_epochs=args.num_epochs,
+        val_data=test_loader
     )
-    
+
+    # evaluate model
+    evaluate_model(model, test_loader)
+
+    # save model
+    torch.save(model.state_dict(), MODEL_DIR / f"model_{wandb.run.id}.pt")

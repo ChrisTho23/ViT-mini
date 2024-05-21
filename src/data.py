@@ -8,7 +8,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--download", help="Flag to download the CIFAR-10 dataset", type=bool, default=False)
+        "--download", help="Flag to download the CIFAR-10 dataset", action='store_true'
+    )
     args = parser.parse_args()
 
     return args

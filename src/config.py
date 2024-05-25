@@ -16,6 +16,7 @@ TRAINING = {
     "batch_size": 64,
     "num_epochs": 7, # 7 or 14 
     "learning_rate": 8e-4, # 2e-4 - 8e-4
+    "weight_decay": 0.1,
 }
 
 MODEL = {

@@ -123,7 +123,7 @@ if __name__ == "__main__":
     )
 
     # initialize optimizer
-    optim = torch.optim.Adam(params=model.parameters(True), lr=args.lr)
+    optim = torch.optim.Adam(params=model.parameters(True), lr=args.lr, weight_decay=TRAINING["weight_decay"])
 
     # train model
     model = train_model(

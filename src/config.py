@@ -19,8 +19,8 @@ TRAINING = {
 }
 
 MODEL = {
-    "latent_space_dim": 256,
-    "dim_ff": 512,
-    "num_heads": 8,
-    "depth": 6,
+    "latent_space_dim": 768,
+    "dim_ff": 3072,
+    "num_heads": 12,
+    "depth": 12,
 }

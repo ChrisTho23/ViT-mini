@@ -39,7 +39,7 @@ class VisionTransformer(nn.Module):
         ) # B, num_patches, C * patch_size * patch_size
 
         # class token
-        x_class = torch.zeros(B, 1, self.latent_space_dim, dtype=float)
+        x_class = torch.zeros(B, 1, self.latent_space_dim, dtype=float, device=x.device)
 
         # create embeddings
         x_patch_embedding = self.patch_embedding_layer(x) # B, num_patches, latent_space_dim
@@ -50,7 +50,7 @@ class VisionTransformer(nn.Module):
         x_embedding = x_patch_embedding + x_pos_embedding # B, num_patches, latent_space_dim
 
         # transformer blocks
-        x = self.transformer_blocks(x_embedding)# .view(B, -1) # B, num_patches * latent_space_dim
+        x = self.transformer_blocks(x_embedding) # .view(B, -1) # B, num_patches * latent_space_dim
 
         # classification head
         logits = self.classification_head(x[:, 0, :]) # only feed transformed class token into classification head

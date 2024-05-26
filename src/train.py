@@ -32,6 +32,7 @@ def train_model(
         model: torch.nn.Module,
         train_data: torch.utils.data.DataLoader,
         optimizer: torch.optim.Optimizer,
+        device: torch.device,
         num_epochs: int,
         val_data: torch.utils.data.DataLoader | None = None,
 ):
@@ -46,6 +47,7 @@ def train_model(
 
         for i, data in enumerate(train_data): 
             x, y = data
+            x, y = x.to(device), y.to(device)
             optimizer.zero_grad()
 
             _, loss = model(x, y)
@@ -67,7 +69,11 @@ def train_model(
     return model
 
 @torch.no_grad()
-def evaluate_model(model: torch.nn.Module, test_data: torch.utils.data.DataLoader):
+def evaluate_model(
+    model: torch.nn.Module, 
+    test_data: torch.utils.data.DataLoader,
+    device: torch.device
+):
     logging.info("Evaluating model...")
 
     model.eval()
@@ -76,6 +82,7 @@ def evaluate_model(model: torch.nn.Module, test_data: torch.utils.data.DataLoade
     test_loss = 0.
 
     for i, (x_test, y_test) in enumerate(test_data):
+        x_test, y_test = x_test.to(device), y_test.to(device)
         logits, loss = model(x_test, y_test)
 
         preds = torch.argmax(torch.softmax(logits, dim=-1), dim=-1)
@@ -108,6 +115,10 @@ if __name__ == "__main__":
         }
     )
 
+    # Check if GPU is available
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    logging.info(f"Using device: {device}")
+
     # load CIFAR-10 dataset
     try:
         train_loader, test_loader = load_cifar10(DATA_DIR, download=args.download, batch_size=TRAINING["batch_size"])
@@ -120,7 +131,7 @@ if __name__ == "__main__":
         image_width=DATA["image_width"], image_height=DATA["image_height"], channel_size=DATA["channel_size"],
         patch_size=DATA["patch_size"], latent_space_dim=MODEL["latent_space_dim"], dim_ff = MODEL["dim_ff"], 
         num_heads=MODEL["num_heads"], depth=MODEL["depth"], num_classes=DATA["num_classes"]
-    )
+    ).to(device)
 
     # initialize optimizer
     optim = torch.optim.Adam(params=model.parameters(True), lr=args.lr, weight_decay=TRAINING["weight_decay"])
@@ -130,12 +141,17 @@ if __name__ == "__main__":
         model=model, 
         train_data=train_loader,
         optimizer=optim,
+        device=device,
         num_epochs=args.num_epochs,
         val_data=test_loader
     )
 
     # evaluate model
-    evaluate_model(model, test_loader)
+    evaluate_model(
+        model=model, 
+        test_data=test_loader,
+        device=device
+    )
 
     # save model
     torch.save(model.state_dict(), MODEL_DIR / f"model_{wandb.run.id}.pt")

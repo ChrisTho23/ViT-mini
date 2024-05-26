@@ -38,10 +38,15 @@ def test_train_model(mock_wandb_log, synthetic_data):
     )
     optimizer = torch.optim.Adam(params=model.parameters(), lr=lr)
 
+    # Check if GPU is available
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.to(device)
+
     trained_model = train_model(
         model=model,
         train_data=dataloader,
         optimizer=optimizer,
+        device=device,
         num_epochs=2
     )
 
@@ -62,11 +67,19 @@ def test_evaluate_model(mock_wandb_log, synthetic_data):
         patch_size=4, latent_space_dim=emb_dim, dim_ff=dim_ff,
         num_heads=num_heads, depth=depth, num_classes=num_classes
     )
+
+    # Check if GPU is available
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.to(device)
     
     # Manually setting model to eval mode and mocking state
     model.eval = MagicMock()
-    model.forward = MagicMock(return_value=(torch.rand(batch_size, num_classes), torch.tensor(1.0)))
+    model.forward = MagicMock(return_value=(torch.rand(batch_size, num_classes).to(device), torch.tensor(1.0).to(device)))
 
-    evaluate_model(model, dataloader)
+    evaluate_model(
+        model=model, 
+        test_data=dataloader,
+        device=device
+    )
 
     assert model.eval.called

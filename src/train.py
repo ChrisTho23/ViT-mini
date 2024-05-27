@@ -106,11 +106,10 @@ if __name__ == "__main__":
     # initialize wandb
     wandb.init(
         project="ViT-mini",
-
         config={
             "dataset": "CIFAR-10",
             "patch_size": DATA["patch_size"],
-            **args.__dict__,
+            **vars(args),
             **MODEL
         }
     )

@@ -3,6 +3,7 @@ from torch import nn
 import torch.nn.functional as F
 
 from src.model_components import ClassificationHead, TransformerBlock
+from src.data import Patchify
 
 class VisionTransformer(nn.Module):
     def __init__(
@@ -12,6 +13,7 @@ class VisionTransformer(nn.Module):
     ):
         super(VisionTransformer, self).__init__()
         self.patch_size = patch_size
+        self.patchify = Patchify(patch_size)
         self.latent_space_dim = latent_space_dim
         self.num_patches = (image_width * image_height) // (self.patch_size**2)
         self.patch_embedding_layer = nn.Linear(
@@ -30,19 +32,13 @@ class VisionTransformer(nn.Module):
     def forward(self, x, targets=None):
         B, C, H, W = x.shape
 
-        # extract patches
-        x = x.unfold(
-            2, self.patch_size, self.patch_size
-        ).unfold(3, self.patch_size, self.patch_size) # B, C, H//patch_size, W//patch_size, patch_size, patch_size
-        x = x.contiguous().view(
-            B, self.num_patches, C * self.patch_size * self.patch_size
-        ) # B, num_patches, C * patch_size * patch_size
+        x_patches = self.patchify(x) # B, num_patches, (C * patch_size * patch_size)
 
         # class token
-        x_class = torch.zeros(B, 1, self.latent_space_dim, dtype=float)
+        x_class = torch.zeros(B, 1, self.latent_space_dim, dtype=float, device=x.device)
 
         # create embeddings
-        x_patch_embedding = self.patch_embedding_layer(x) # B, num_patches, latent_space_dim
+        x_patch_embedding = self.patch_embedding_layer(x_patches) # B, num_patches, latent_space_dim
         x_pos_embedding = self.positional_embedding_table(
             torch.arange(self.num_patches+1, device=x.device)
         ) # B, num_patches, latent_space_dim
@@ -50,7 +46,7 @@ class VisionTransformer(nn.Module):
         x_embedding = x_patch_embedding + x_pos_embedding # B, num_patches, latent_space_dim
 
         # transformer blocks
-        x = self.transformer_blocks(x_embedding)# .view(B, -1) # B, num_patches * latent_space_dim
+        x = self.transformer_blocks(x_embedding) # .view(B, -1) # B, num_patches * latent_space_dim
 
         # classification head
         logits = self.classification_head(x[:, 0, :]) # only feed transformed class token into classification head

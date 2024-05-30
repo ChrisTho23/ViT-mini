@@ -42,8 +42,10 @@ class MultiHeadSelfAttentionLayer(torch.nn.Module):
         self.context_length = context_length
         self.dtype = dtype
         self.output_projection = torch.nn.Linear(dim_out, dim_out, dtype=self.dtype)
-        self.attention_heads = [SelfAttentionLayer(dim_in, self.d_head, dtype=self.dtype) for _ in range(self.num_heads)]
+        self.attention_heads = torch.nn.ModuleList(
+            [SelfAttentionLayer(dim_in, self.d_head, dtype=self.dtype) for _ in range(self.num_heads)]
+        )
     def forward(self, x):
-        x = torch.concat([self_att(x) for self_att in self.attention_heads], axis=-1) # concatenate along data dim
+        x = torch.cat([self_att(x) for self_att in self.attention_heads], dim=-1) # concatenate along data dim
         return self.output_projection(x)
 

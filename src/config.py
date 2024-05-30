@@ -8,7 +8,7 @@ DATA = {
     "image_width": 32,
     "image_height": 32,
     "channel_size": 3,
-    "patch_size": 8,
+    "patch_size": 2,
     "num_classes": 10,
 }
 

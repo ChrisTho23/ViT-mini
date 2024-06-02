@@ -1,7 +1,7 @@
 import torch
 
 class SelfAttentionLayer(torch.nn.Module):
-    def __init__(self, dim_in: int, dim_out: int, dtype=torch.float32):
+    def __init__(self, dim_in: int, dim_out: int, dtype=float):
         super(SelfAttentionLayer, self).__init__()
         self.dim_in = dim_in
         self.dim_out = dim_out
@@ -33,7 +33,7 @@ class SelfAttentionLayer(torch.nn.Module):
         return torch.einsum('bjd, bij->bid', values, att_scores) # shape: [B, N, D]
         
 class MultiHeadSelfAttentionLayer(torch.nn.Module):
-    def __init__(self, dim_in: int, dim_out: int, num_heads: int, context_length: int, dtype=torch.float32):
+    def __init__(self, dim_in: int, dim_out: int, num_heads: int, context_length: int, dtype=float):
         super(MultiHeadSelfAttentionLayer, self).__init__()
         self.dim_in = dim_in
         self.dim_out = dim_out

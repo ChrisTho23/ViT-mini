@@ -3,7 +3,8 @@ import torch
 import logging
 import os
 
-from src.data import load_cifar10
+from src.data import load_cifar10, Patchify
+from src.utils import display_image, Depatchify
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 
@@ -13,17 +14,23 @@ def target_directory(tmpdir_factory):
     temp_dir = tmpdir_factory.mktemp("data")
     return temp_dir
 
+@pytest.fixture(scope="class")
+def cifar10_data(target_directory):
+    """Fixture to load the CIFAR-10 dataset once for all tests."""
+    train_loader, test_loader = load_cifar10(
+        target_directory=str(target_directory), 
+        download=True, 
+        batch_size=64
+    )
+    return train_loader, test_loader
+
 @pytest.mark.usefixtures("target_directory")
 class TestLoadCIFAR10:
     """Test class for load_cifar10 functionality."""
 
-    def test_load_cifar10(self, target_directory):
+    def test_load_cifar10(self, cifar10_data):
         """Test the load_cifar10 function with download=True."""
-        train_loader, test_loader = load_cifar10(
-            target_directory=str(target_directory), 
-            download=True, 
-            batch_size=64
-        )
+        train_loader, test_loader = cifar10_data
 
         # Check if DataLoader objects are returned
         assert isinstance(train_loader, torch.utils.data.DataLoader), "Expected train_loader to be a DataLoader instance"
@@ -52,13 +59,6 @@ class TestLoadCIFAR10:
 
     def test_load_cifar10_no_download(self, target_directory):
         """Test the load_cifar10 function with download=False."""
-        # First, download the dataset
-        load_cifar10(
-            target_directory=str(target_directory), 
-            download=True, 
-            batch_size=64
-        )
-
         # Check if dataset files exist
         train_dir = os.path.join(target_directory, 'cifar-10-batches-py')
         assert os.path.exists(train_dir), "Expected CIFAR-10 training directory to exist"
@@ -94,3 +94,31 @@ class TestLoadCIFAR10:
 
         logging.info(f"Train data shape: {train_data.shape}, Train labels shape: {train_labels.shape}")
         logging.info(f"Test data shape: {test_data.shape}, Test labels shape: {test_labels.shape}")
+
+    def test_reassemble_patches(self, cifar10_data):
+        """Test reassembling patches back to images."""
+        train_loader, _ = cifar10_data
+
+        # Get a single batch (one image)
+        train_data_iter = iter(train_loader)
+        image, _ = next(train_data_iter)
+
+        # Define patch size
+        patch_size = 4
+
+        # Patchify the image
+        patchify = Patchify(patch_size=patch_size)
+        patches = patchify(image)
+
+        # Reassemble the image
+        depatchify = Depatchify(patch_size=patch_size, image_size=(32, 32))
+        reassembled_image = depatchify(patches)
+
+        # Display the original and reassembled images
+        #display_image(image[0], title="Original Image")
+        #display_image(reassembled_image[0], title="Reassembled Image")
+
+        # Check if the reassembled image is close to the original
+        assert torch.allclose(image, reassembled_image, atol=1e-6), "Reassembled image is not close to the original image"
+
+        logging.info("Original and reassembled images are close.")

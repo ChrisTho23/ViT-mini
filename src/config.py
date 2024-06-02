@@ -15,13 +15,13 @@ DATA = {
 TRAINING = {
     "batch_size": 64,
     "num_epochs": 7, # 7 or 14 
-    "learning_rate": 8e-4, # 2e-4 - 8e-4
+    "learning_rate": 5e-6, # 2e-4 - 8e-4
     "weight_decay": 0.1,
 }
 
 MODEL = {
-    "latent_space_dim": 768,
-    "dim_ff": 3072,
-    "num_heads": 12,
-    "depth": 12,
+    "latent_space_dim": 512,
+    "dim_ff": 2048,
+    "num_heads": 8,
+    "depth": 6,
 }

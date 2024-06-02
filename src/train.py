@@ -57,12 +57,12 @@ def train_model(
             # perform optimizer step
             optimizer.step()
 
-            wandb.log({"train_loss": loss.item()})
             running_loss += loss.item()
 
             # report loss every 100th iteration
             if((i + 1) % 100 == 0):
                 running_loss /= 100
+                wandb.log({"train_loss": running_loss, "batch": i+1})
                 logging.info(f"Epoch {epoch}, batch {i + 1} - Train loss: {running_loss}")
                 running_loss = 0.
 
@@ -89,7 +89,6 @@ def evaluate_model(
         preds = torch.argmax(torch.softmax(logits, dim=-1), dim=-1)
         accuracy = (preds == y_test).float().mean()
 
-        wandb.log({"batch_test_loss": loss.item(), "batch_test_accuracy": accuracy.item()})
         logging.info(f"Batch {i + 1} test metrics - Loss: {loss.item()}, Accuracy: {accuracy.item()}")
 
         acc += accuracy.item()

@@ -80,6 +80,7 @@ def evaluate_model(
 
     acc = 0.
     test_loss = 0.
+    num_batches = len(test_data)
 
     for i, (x_test, y_test) in enumerate(test_data):
         x_test, y_test = x_test.to(device), y_test.to(device)
@@ -91,11 +92,13 @@ def evaluate_model(
         wandb.log({"batch_test_loss": loss.item(), "batch_test_accuracy": accuracy.item()})
         logging.info(f"Batch {i + 1} test metrics - Loss: {loss.item()}, Accuracy: {accuracy.item()}")
 
-        acc = (acc * i + accuracy.item()) / (i + 1)
-        test_loss = (test_loss * i + loss.item()) / (i + 1)
+        acc += accuracy.item()
+        test_loss += loss.item()
 
-        wandb.log({"test_loss": test_loss, "test_accuracy": acc})
+    acc /= num_batches
+    test_loss /= num_batches
 
+    wandb.log({"test_loss": test_loss, "test_accuracy": acc})
     logging.info(f"Final test metrics - Loss: {test_loss}, Accuracy: {acc}")
 
 

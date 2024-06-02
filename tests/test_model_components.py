@@ -9,7 +9,7 @@ def synthetic_data():
     batch_size = 16
     emb_dim = 64
     context_length = 10
-    data = torch.rand(batch_size, context_length, emb_dim, dtype=torch.float)
+    data = torch.rand(batch_size, context_length, emb_dim)
     return data
 
 @pytest.fixture

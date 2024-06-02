@@ -1,7 +1,7 @@
 import torch
 
 class SelfAttentionLayer(torch.nn.Module):
-    def __init__(self,dim_in: int, dim_out: int, dtype=float):
+    def __init__(self, dim_in: int, dim_out: int, dtype=float):
         super(SelfAttentionLayer, self).__init__()
         self.dim_in = dim_in
         self.dim_out = dim_out
@@ -13,8 +13,8 @@ class SelfAttentionLayer(torch.nn.Module):
     def get_att_scores(self, keys, queries):
         """
         Implements computation of attention scores:
-        :params keys: keys [B, N, D]
-        :params queries: [B, N, D]
+        :params keys: keys [B, N, D] (B: batch size, N: context-length, D: latent space dim.)
+        :params queries: [B, N, D] (B: batch size, N: context-length, D: latent space dim.)
         """
         return self.softmax_layer(torch.einsum('bid, bjd->bij', queries, keys)/(self.dim_out**0.5))
     def forward(self, x):
@@ -46,6 +46,6 @@ class MultiHeadSelfAttentionLayer(torch.nn.Module):
             [SelfAttentionLayer(dim_in, self.d_head, dtype=self.dtype) for _ in range(self.num_heads)]
         )
     def forward(self, x):
-        x = torch.cat([self_att(x) for self_att in self.attention_heads], dim=-1) # concatenate along data dim
+        x = torch.cat([self_att(x) for self_att in self.attention_heads], dim=-1) # Shape: [B, N, dim_out]
         return self.output_projection(x)
 

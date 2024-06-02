@@ -37,7 +37,7 @@ class TestSelfAttentionLayers:
         output = self.self_attention_layer(self.dummy_input)
         expected_shape = self.dummy_input.shape
         logging.info(f"Self-Attention Layer output shape: {output.shape}")
-        assert output.shape == expected_shape, f"Expected shape {expected_shape}, but got {output.shape}"
+        assert output.shape == expected_shape, f"Expected shape {expected_shape}, but got {output.shape}."
 
     def test_multihead_self_attention_forward_shape(self):
         """Test the shape of the output from the MultiHeadSelfAttentionLayer."""

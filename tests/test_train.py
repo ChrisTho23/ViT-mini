@@ -14,7 +14,7 @@ def synthetic_data():
     num_channels = 3
     image_size = 16
     num_classes = 10
-    data = torch.rand(batch_size * 5, num_channels, image_size, image_size, dtype=torch.float)
+    data = torch.rand(batch_size * 5, num_channels, image_size, image_size)
     labels = torch.randint(0, num_classes, (batch_size * 5,), dtype=torch.long)
     dataset = TensorDataset(data, labels)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)

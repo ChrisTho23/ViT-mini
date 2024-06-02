@@ -1,4 +1,5 @@
 from torch import nn
+import torch
 
 from src.attention import MultiHeadSelfAttentionLayer
 

@@ -1,9 +1,10 @@
 from torch import nn
+import torch
 
 from src.attention import MultiHeadSelfAttentionLayer
 
 class FeedForward(nn.Module):
-    def __init__(self, dim_in: int, dim_ff: int, dim_out: int , dtype=float):
+    def __init__(self, dim_in: int, dim_ff: int, dim_out: int , dtype=torch.float32):
         super(FeedForward, self).__init__()
         self.dtype=dtype
         self.ff_1 = nn.Linear(dim_in, dim_ff, bias=True, dtype=self.dtype)
@@ -14,7 +15,7 @@ class FeedForward(nn.Module):
 
 
 class ClassificationHead(nn.Module):
-    def __init__(self, dim_in: int, dim_ff: int, num_classes: int , dtype=float):
+    def __init__(self, dim_in: int, dim_ff: int, num_classes: int , dtype=torch.float32):
         super(ClassificationHead, self).__init__()
         self.dtype=dtype
         self.ff_1 = nn.Linear(dim_in, dim_ff, bias=True, dtype=self.dtype)
@@ -26,7 +27,7 @@ class ClassificationHead(nn.Module):
     
 
 class TransformerBlock(nn.Module):
-    def __init__(self, emb_dim: int, dim_ff: int, num_heads: int, context_length: int, dtype=float):
+    def __init__(self, emb_dim: int, dim_ff: int, num_heads: int, context_length: int, dtype=torch.float32):
         super(TransformerBlock, self).__init__()
         self.dtype=dtype
         self.layer_norm_1 = nn.LayerNorm(emb_dim, dtype=self.dtype) # only normalize over embedding dim.

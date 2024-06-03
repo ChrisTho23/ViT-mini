@@ -2,10 +2,11 @@ import logging
 import argparse
 import torch
 import wandb
+from datetime import datetime
 
 from src.model import VisionTransformer
 from src.data import load_cifar10 
-from src.config import TRAINING, DATA, DATA_DIR, MODEL_DIR, MODEL
+from src.config import TRAINING, DATA, DATA_DIR, MODEL_DIR, MODEL, SEED
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 
@@ -28,20 +29,59 @@ def get_args():
 
     return args
 
+@torch.no_grad()
+def evaluate_model(
+    model: torch.nn.Module, 
+    data: torch.utils.data.DataLoader,
+    type: str,
+    device: torch.device
+):
+    logging.info(f"Evaluating model on {type} set ...")
+
+    model.eval()
+
+    acc = 0.
+    loss = 0.
+    num_batches = len(data)
+
+    for i, (x_test, y_test) in enumerate(data):
+        x_test, y_test = x_test.to(device), y_test.to(device)
+        logits, loss = model(x_test, y_test)
+
+        preds = torch.argmax(torch.softmax(logits, dim=-1), dim=-1)
+        accuracy = (preds == y_test).float().mean()
+
+        acc += accuracy.item()
+        loss += loss.item()
+
+    acc /= num_batches
+    loss /= num_batches
+
+    wandb.log({f"{type}_loss": loss, f"{type}_accuracy": acc})
+    logging.info(f"{type} metrics - loss: {loss}, accuracy: {acc}")
+
+    return loss
+
 def train_model(
         model: torch.nn.Module,
         train_data: torch.utils.data.DataLoader,
         optimizer: torch.optim.Optimizer,
         device: torch.device,
         num_epochs: int,
+        patience: int,
         val_data: torch.utils.data.DataLoader | None = None,
 ):
     logging.info("Training model...")
 
-    model.train()
+    n = len(train_data)
+    best_val_loss = float('inf')
+    patience_counter = 0
 
     for epoch in range(num_epochs):
         logging.info(f"Epoch {epoch}")
+        wandb.log({"epoch": epoch})
+
+        model.train()
 
         running_loss = 0. # set running loss for current epoch to zero
 
@@ -62,44 +102,30 @@ def train_model(
             # report loss every 100th iteration
             if((i + 1) % 100 == 0):
                 running_loss /= 100
-                wandb.log({"train_loss": running_loss, "batch": i+1})
+                wandb.log({"train_loss": running_loss, "batch": (epoch * n + i+1)})
                 logging.info(f"Epoch {epoch}, batch {i + 1} - Train loss: {running_loss}")
                 running_loss = 0.
 
+        if val_data:
+            # evaluate model on val set
+            epoch_val_loss = evaluate_model(
+                model=model, 
+                data=val_loader,
+                type="val",
+                device=device
+            )
+            if epoch_val_loss < best_val_loss:
+                best_val_loss = epoch_val_loss
+                timestamp = datetime.now().strftime("%m_%d_%H")
+                torch.save(model.state_dict(), MODEL_DIR / f"model_{timestamp}.pt")
+                patience_counter = 0
+            else: 
+                patience_counter += 1
+                if patience_counter >= patience:
+                    logging.info(f"Early stopping triggered after {epoch + 1} epochs.")
+                    break
+
     return model
-
-@torch.no_grad()
-def evaluate_model(
-    model: torch.nn.Module, 
-    test_data: torch.utils.data.DataLoader,
-    device: torch.device
-):
-    logging.info("Evaluating model...")
-
-    model.eval()
-
-    acc = 0.
-    test_loss = 0.
-    num_batches = len(test_data)
-
-    for i, (x_test, y_test) in enumerate(test_data):
-        x_test, y_test = x_test.to(device), y_test.to(device)
-        logits, loss = model(x_test, y_test)
-
-        preds = torch.argmax(torch.softmax(logits, dim=-1), dim=-1)
-        accuracy = (preds == y_test).float().mean()
-
-        logging.info(f"Batch {i + 1} test metrics - Loss: {loss.item()}, Accuracy: {accuracy.item()}")
-
-        acc += accuracy.item()
-        test_loss += loss.item()
-
-    acc /= num_batches
-    test_loss /= num_batches
-
-    wandb.log({"test_loss": test_loss, "test_accuracy": acc})
-    logging.info(f"Final test metrics - Loss: {test_loss}, Accuracy: {acc}")
-
 
 if __name__ == "__main__":
     # initialize arguments
@@ -122,7 +148,13 @@ if __name__ == "__main__":
 
     # load CIFAR-10 dataset
     try:
-        train_loader, test_loader = load_cifar10(DATA_DIR, download=args.download, batch_size=TRAINING["batch_size"])
+        train_loader, val_loader, test_loader = load_cifar10(
+            target_directory=DATA_DIR, 
+            download=args.download, 
+            batch_size=TRAINING["batch_size"],
+            seed=SEED,
+            val_size=TRAINING["val_size"],    
+        )
     except Exception as e:
         logging.error(f"Error loading CIFAR-10 dataset: {e}")
         logging.error("Please run the script with the flag '--download True' to download the dataset")
@@ -137,6 +169,8 @@ if __name__ == "__main__":
     # initialize optimizer
     optim = torch.optim.Adam(params=model.parameters(True), lr=args.lr, weight_decay=TRAINING["weight_decay"])
 
+    model.train()
+
     # train model
     model = train_model(
         model=model, 
@@ -144,15 +178,14 @@ if __name__ == "__main__":
         optimizer=optim,
         device=device,
         num_epochs=args.num_epochs,
-        val_data=test_loader
+        patience= TRAINING["patience"],
+        val_data=val_loader,
     )
 
     # evaluate model
-    evaluate_model(
+    _ = evaluate_model(
         model=model, 
-        test_data=test_loader,
+        data=test_loader,
+        type="test",
         device=device
     )
-
-    # save model
-    torch.save(model.state_dict(), MODEL_DIR / f"model_{wandb.run.id}.pt")

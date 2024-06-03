@@ -110,7 +110,7 @@ def train_model(
             # evaluate model on val set
             epoch_val_loss = evaluate_model(
                 model=model, 
-                data=val_loader,
+                data=val_data,
                 type="val",
                 device=device
             )

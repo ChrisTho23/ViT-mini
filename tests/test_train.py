@@ -42,12 +42,21 @@ def test_train_model(mock_wandb_log, synthetic_data):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model.to(device)
 
+    val_data = DataLoader(
+        TensorDataset(
+            torch.rand(20, num_channels, image_size, image_size),
+            torch.randint(0, num_classes, (20,), dtype=torch.long)
+        ), batch_size=4, shuffle=False
+    )
+
     trained_model = train_model(
         model=model,
         train_data=dataloader,
         optimizer=optimizer,
         device=device,
-        num_epochs=2
+        num_epochs=2,
+        patience=1,
+        val_data=val_data
     )
 
     assert isinstance(trained_model, torch.nn.Module)
@@ -78,7 +87,8 @@ def test_evaluate_model(mock_wandb_log, synthetic_data):
 
     evaluate_model(
         model=model, 
-        test_data=dataloader,
+        data=dataloader,
+        type='test',
         device=device
     )
 

@@ -28,16 +28,26 @@ def get_args():
 
     return args
 
-def load_cifar10(target_directory, download, batch_size: int) -> torch.utils.data.DataLoader:
+def load_cifar10(target_directory, download, batch_size: int, val_size: float, seed: int) -> torch.utils.data.DataLoader:
     logging.info("Downloading CIFAR-10 dataset")
+
+    torch.manual_seed(42)
     # tranform data to tensor and normalize
     transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
     train_set = datasets.CIFAR10(root=target_directory, train=True, download=download, transform=transform)
+    n = len(train_set)
+    n_train = int((1-val_size) * n)
+    n_val = n - n_train
+    train_set, val_set = torch.utils.data.random_split(train_set, [n_train, n_val])
     train_loader = torch.utils.data.DataLoader(
         train_set, batch_size=batch_size,
+        shuffle=True, num_workers=2
+    )
+    val_loader = torch.utils.data.DataLoader(
+        val_set, batch_size=batch_size,
         shuffle=True, num_workers=2
     )
     test_set = datasets.CIFAR10(root=target_directory, train=False, download=download, transform=transform)
@@ -48,32 +58,7 @@ def load_cifar10(target_directory, download, batch_size: int) -> torch.utils.dat
     
     logging.info(
         f"CIFAR-10 dataset has been downloaded and saved in {target_directory}\n"
-        f"Dataset has {len(train_loader)} train and {len(test_loader)} test samples"
+        f"Dataset has {len(train_loader)} train, {len(val_loader)} val, and {len(test_loader)} test samples"
     )
 
-    return train_loader, test_loader
-
-def load_cifar10(target_directory, download, batch_size: int) -> torch.utils.data.DataLoader:
-    logging.info("Downloading CIFAR-10 dataset")
-    # tranform data to tensor and normalize
-    transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-    ])
-    train_set = datasets.CIFAR10(root=target_directory, train=True, download=download, transform=transform)
-    train_loader = torch.utils.data.DataLoader(
-        train_set, batch_size=batch_size,
-        shuffle=True, num_workers=2
-    )
-    test_set = datasets.CIFAR10(root=target_directory, train=False, download=download, transform=transform)
-    test_loader = torch.utils.data.DataLoader(
-        test_set, batch_size=batch_size,
-        shuffle=False, num_workers=2
-    )
-    
-    logging.info(
-        f"CIFAR-10 dataset has been downloaded and saved in {target_directory}\n"
-        f"Dataset has {len(train_loader)} train and {len(test_loader)} test samples"
-    )
-
-    return train_loader, test_loader
+    return train_loader, val_loader, test_loader

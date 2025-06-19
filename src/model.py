@@ -18,15 +18,18 @@ class VisionTransformer(nn.Module):
         self.num_patches = (image_width * image_height) // (self.patch_size**2)
         self.patch_embedding_layer = nn.Linear(
             channel_size * self.patch_size * self.patch_size,  
-            self.latent_space_dim  
+            self.latent_space_dim, 
+            dtype=torch.float32
         )
         self.positional_embedding_table = nn.Embedding(
             self.num_patches+1, # effective sequence length is num_patches + 1 (class token)
-            self.latent_space_dim
+            self.latent_space_dim, 
+            dtype=torch.float32,
         )
         self.transformer_blocks = nn.Sequential(
-            *[TransformerBlock(latent_space_dim, dim_ff, num_heads, self.num_patches) for _ in range(depth)]
+            *[TransformerBlock(latent_space_dim, dim_ff, num_heads, self.num_patches, dtype=torch.float32) for _ in range(depth)]
         )
+        self.cls_token = nn.Parameter(torch.zeros(1, 1, latent_space_dim, dtype=torch.float32), requires_grad=True) # class token
         self.classification_head = ClassificationHead(latent_space_dim, dim_ff, num_classes) # only one token used
 
     def forward(self, x, targets=None):
@@ -35,7 +38,8 @@ class VisionTransformer(nn.Module):
         x_patches = self.patchify(x) # B, num_patches, (C * patch_size * patch_size)
 
         # class token
-        x_class = torch.zeros(B, 1, self.latent_space_dim, dtype=float, device=x.device)
+        # x_class = torch.zeros(B, 1, self.latent_space_dim, dtype=torch.float32, device=x.device)
+        x_class = self.cls_token.expand(B, -1, -1) # expand to batch dim 
 
         # create embeddings
         x_patch_embedding = self.patch_embedding_layer(x_patches) # B, num_patches, latent_space_dim
